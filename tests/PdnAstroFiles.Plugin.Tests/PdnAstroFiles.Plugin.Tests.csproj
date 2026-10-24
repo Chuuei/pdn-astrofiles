@@ -23,9 +23,11 @@
       <ExternallyResolved>true</ExternallyResolved>
     </Reference>
     <!-- Tests execute the real preview implementation, including its native dependencies.
+         Exclude the portable app's private .NET runtime: a local hostfxr would redirect
+         testhost away from the SDK-installed shared frameworks on a clean CI runner.
          These files are confined to test output and never included in the plugin package. -->
     <None Include="$(PaintDotNetPath)\*.dll"
-          Exclude="$(PaintDotNetPath)\System.*.dll;$(PaintDotNetPath)\Microsoft.*.dll;$(PaintDotNetPath)\mscorlib.dll;$(PaintDotNetPath)\netstandard.dll;$(PaintDotNetPath)\paintdotnet.dll;$(PaintDotNetPath)\paintdotnet.ni.dll"
+          Exclude="$(PaintDotNetPath)\System.*.dll;$(PaintDotNetPath)\Microsoft.*.dll;$(PaintDotNetPath)\mscorlib.dll;$(PaintDotNetPath)\netstandard.dll;$(PaintDotNetPath)\paintdotnet.dll;$(PaintDotNetPath)\paintdotnet.ni.dll;$(PaintDotNetPath)\hostfxr.dll;$(PaintDotNetPath)\hostpolicy.dll;$(PaintDotNetPath)\coreclr.dll;$(PaintDotNetPath)\clrjit.dll;$(PaintDotNetPath)\clrgc*.dll;$(PaintDotNetPath)\mscord*.dll;$(PaintDotNetPath)\dbgshim.dll"
           Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- Built-in PNG integration tests execute the actual application saver. -->
     <None Include="$(PaintDotNetPath)\paintdotnet.dll" Link="paintdotnet.dll" CopyToOutputDirectory="PreserveNewest" />
