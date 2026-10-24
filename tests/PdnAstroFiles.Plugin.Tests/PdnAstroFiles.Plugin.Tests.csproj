@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)PluginTests.runsettings</RunSettingsFilePath>
+    <PaintDotNetPath Condition="'$(PaintDotNetPath)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\artifacts\paintdotnet\PaintDotNet.FileTypes.dll')">$(MSBuildThisFileDirectory)..\..\artifacts\paintdotnet</PaintDotNetPath>
+    <PaintDotNetPath Condition="'$(PaintDotNetPath)' == ''">$(ProgramFiles)\paint.net</PaintDotNetPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="all" />
+    <Using Include="Xunit" />
+    <ProjectReference Include="..\..\src\PdnAstroFiles\PdnAstroFiles.csproj" />
+    <Reference Include="PaintDotNet.Core;PaintDotNet.Primitives;PaintDotNet.ComponentModel;PaintDotNet.FileTypes;PaintDotNet.Windows;PaintDotNet.Windows.Core;PaintDotNet.Fundamentals">
+      <HintPath>$(PaintDotNetPath)\%(Identity).dll</HintPath>
+      <Private>true</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <!-- Tests execute the real preview implementation, including its native dependencies.
+         These files are confined to test output and never included in the plugin package. -->
+    <None Include="$(PaintDotNetPath)\*.dll"
+          Exclude="$(PaintDotNetPath)\System.*.dll;$(PaintDotNetPath)\Microsoft.*.dll;$(PaintDotNetPath)\mscorlib.dll;$(PaintDotNetPath)\netstandard.dll;$(PaintDotNetPath)\paintdotnet.dll;$(PaintDotNetPath)\paintdotnet.ni.dll"
+          Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Built-in PNG integration tests execute the actual application saver. -->
+    <None Include="$(PaintDotNetPath)\paintdotnet.dll" Link="paintdotnet.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

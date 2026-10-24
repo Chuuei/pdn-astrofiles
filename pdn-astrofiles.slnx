@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PdnAstroFiles.Imaging/PdnAstroFiles.Imaging.csproj" />
+    <Project Path="src/PdnAstroFiles/PdnAstroFiles.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PdnAstroFiles.Imaging.Tests/PdnAstroFiles.Imaging.Tests.csproj" />
+    <Project Path="tests/PdnAstroFiles.Plugin.Tests/PdnAstroFiles.Plugin.Tests.csproj" />
+  </Folder>
+</Solution>

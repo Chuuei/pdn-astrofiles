@@ -1,0 +1,18 @@
+AstroFiles (pdn-astrofiles)
+Copyright 2026 Karsten Schlender and contributors
+https://github.com/Chuuei/pdn-astrofiles
+
+Licensed under the Apache License, Version 2.0.
+
+Display stretch detection and Bayer reconstruction follow algorithms from
+SkyBrowser, Copyright 2026 Chuuei and contributors, licensed under Apache 2.0.
+https://github.com/Chuuei/SkyBrowser
+AstroFiles adapts these algorithms for Paint.NET's floating-point image pipeline.
+
+This product includes software developed for the XISFLib.Net project.
+Copyright 2026 Chuuei and contributors
+https://github.com/Chuuei/XISFLib.Net
+Licensed under the Apache License, Version 2.0.
+
+Third-party components retain their own licenses; see THIRD-PARTY-NOTICES.md
+and the licenses directory in release packages.

@@ -1,0 +1,12 @@
+{
+  "xisf": {
+    "repository": "https://github.com/Chuuei/XISFLib.Net",
+    "revision": "9c0325fcda231603014c497d4d5bbd40477e9030"
+  },
+  "paintDotNet": {
+    "version": "5.200.9772.9330",
+    "release": "https://github.com/paintdotnet/release/releases/tag/v5.2-beta.5.200.9772.9330",
+    "url": "https://github.com/paintdotnet/release/releases/download/v5.2-beta.5.200.9772.9330/paint.net.5.200.9772.9330.portable.x64.zip",
+    "sha256": "b39657f46b974964e8878b66e6d06d64fb6b6e8e19caa46267b5b35baeb4ba01"
+  }
+}

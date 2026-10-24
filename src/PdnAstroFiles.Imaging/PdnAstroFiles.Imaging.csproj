@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <XisfLibraryRoot Condition="'$(XisfLibraryRoot)' == ''">$(MSBuildThisFileDirectory)..\..\artifacts\XISFLib.Net</XisfLibraryRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(XisfLibraryRoot)\XISFLib\XISFLib.csproj" />
+  </ItemGroup>
+  <Target Name="ValidateXisfLibraryRoot" BeforeTargets="CollectPackageReferences">
+    <Error Condition="!Exists('$(XisfLibraryRoot)\XISFLib\XISFLib.csproj')"
+           Text="XISFLib source was not found. Run ./build/Initialize-Dependencies.ps1 first, or set -p:XisfLibraryRoot to an existing XISFLib.Net checkout." />
+  </Target>
+</Project>

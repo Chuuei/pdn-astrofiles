@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Version>0.4.0</Version>
+    <Product>AstroFiles</Product>
+    <Description>Astronomical image file types for Paint.NET.</Description>
+    <PaintDotNetPath Condition="'$(PaintDotNetPath)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\artifacts\paintdotnet\PaintDotNet.FileTypes.dll')">$(MSBuildThisFileDirectory)..\..\artifacts\paintdotnet</PaintDotNetPath>
+    <PaintDotNetPath Condition="'$(PaintDotNetPath)' == ''">$(ProgramFiles)\paint.net</PaintDotNetPath>
+  </PropertyGroup>
+
+  <!-- Paint.NET supplies these assemblies and resolves their dependencies at runtime. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="PdnAstroFiles.Plugin.Tests" />
+    <ProjectReference Include="..\PdnAstroFiles.Imaging\PdnAstroFiles.Imaging.csproj" />
+    <Reference Include="PaintDotNet.Primitives">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.Primitives.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.Windows">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.Windows.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.Windows.Core">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.Windows.Core.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.Base">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.Base.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.Core">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.Core.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.ComponentModel">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.ComponentModel.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.FileTypes">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.FileTypes.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+    <Reference Include="PaintDotNet.Fundamentals">
+      <HintPath>$(PaintDotNetPath)\PaintDotNet.Fundamentals.dll</HintPath>
+      <Private>false</Private>
+      <ExternallyResolved>true</ExternallyResolved>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidatePaintDotNetPath" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(PaintDotNetPath)\PaintDotNet.FileTypes.dll')"
+           Text="Paint.NET 5.2 preview assemblies were not found in '$(PaintDotNetPath)'. Extract the 5.2 beta portable release into artifacts\paintdotnet or set -p:PaintDotNetPath to its directory. Paint.NET 5.1 does not provide the new file type API." />
+  </Target>
+
+</Project>

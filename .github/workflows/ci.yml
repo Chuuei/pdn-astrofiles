@@ -1,0 +1,111 @@
+name: Build, check, test, and release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Windows build and quality checks
+    runs-on: windows-2025
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install .NET 10 for portable imaging tests
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Install the pinned .NET 11 preview SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          global-json-file: global.json
+      - name: Fetch pinned library and host references
+        run: ./build/Initialize-Dependencies.ps1
+      - name: Read plugin version
+        id: version
+        run: |
+          $version = ./build/Get-PluginVersion.ps1
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Restore and audit all dependencies
+        run: dotnet restore pdn-astrofiles.slnx --locked-mode
+      - name: Compile with SDK analyzers and warnings as errors
+        run: dotnet build pdn-astrofiles.slnx -c Release --no-restore -warnaserror
+      - name: Check code formatting and style
+        run: dotnet format pdn-astrofiles.slnx --verify-no-changes --no-restore --include src tests
+      - name: Run imaging and Paint.NET integration tests
+        run: dotnet test pdn-astrofiles.slnx -c Release --no-build --no-restore --logger trx --results-directory artifacts/test-results
+      - name: Package and verify the plugin
+        run: ./build/New-ReleasePackage.ps1
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-results
+          path: artifacts/test-results/*.trx
+          if-no-files-found: ignore
+      - name: Upload installable release package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: AstroFiles-${{ steps.version.outputs.version }}
+          path: artifacts/release/*
+          if-no-files-found: error
+
+  release:
+    name: Publish the plugin version
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PLUGIN_VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: AstroFiles-${{ needs.build.outputs.version }}
+          path: release
+      - name: Publish a new version after all checks pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v$PLUGIN_VERSION"
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GH_REPO/git/ref/tags/$tag")
+          case "$status" in
+            200) echo "$tag already exists; bump the plugin Version to publish again."; exit 0 ;;
+            404) ;;
+            *) echo "Could not check release tag (HTTP $status)."; exit 1 ;;
+          esac
+          (cd release && sha256sum --check "AstroFiles-$PLUGIN_VERSION.zip.sha256")
+          gh release create "$tag" "release/AstroFiles-$PLUGIN_VERSION.zip" \
+            "release/AstroFiles-$PLUGIN_VERSION.zip.sha256" \
+            --target "$GITHUB_SHA" --title "AstroFiles $PLUGIN_VERSION" \
+            --prerelease --notes-file .github/release-notes.md

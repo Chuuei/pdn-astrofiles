@@ -1,0 +1,8 @@
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <!-- Preview SDK/runtime revisions can differ from the application's ReadyToRun images. -->
+      <DOTNET_ReadyToRun>0</DOTNET_ReadyToRun>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>
