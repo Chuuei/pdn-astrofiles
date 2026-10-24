@@ -42,13 +42,11 @@ Each image follows this priority:
 
 1. Retain the exposure of data detected as already developed.
 2. For linear data, apply the stored XISF `DisplayFunction` when present.
-3. Otherwise, apply SkyBrowser's dark-sky stretch with a brighter background
-   target of **0.20**, shadows
-   clipping **−2.8**, and **linked RGB channels**.
+3. Otherwise, apply an automatic stretch with a background target of **0.20**,
+   shadows clipping **−2.8**, and **linked RGB channels**.
 
-The detection and high-pedestal handling follow
-`SkyBrowser.Core/Imaging/SkyImageFinisher.cs`. At most 65,536 samples per channel
-are measured, excluding transparent and non-finite samples. A robust median
+The plugin measures at most 65,536 samples per channel to detect linear data,
+excluding transparent and non-finite samples. A robust median
 below 0.18, or a robust standard deviation below 10% of the median, identifies
 linear data when the dispersion is greater than 1e-10. A high additive pedestal
 is recentered before automatic stretching. Constant images retain their exposure.
@@ -64,8 +62,8 @@ RGB before stretch detection. The four standard patterns (`RGGB`, `BGGR`,
 `GRBG`, `GBRG`) are supported using native XISF CFA metadata, or FITS `BAYERPAT`
 with Bayer offsets and `ROWORDER`. Native CFA metadata takes precedence.
 Missing or unsupported metadata leaves the image grayscale; RGB/RGBA images
-ignore stale Bayer metadata. Bilinear interpolation follows SkyBrowser's
-debayering, and a stored grayscale display function applies to all three
+ignore stale Bayer metadata. Bilinear interpolation reconstructs the missing
+color samples, and a stored grayscale display function applies to all three
 reconstructed colors. A mosaic's grayscale ICC profile is replaced with sRGB.
 
 Images enter Paint.NET as straight-alpha RGBA floating-point pixels with an
@@ -260,5 +258,5 @@ plugin and Paint.NET versions, reproduction steps, and error text. A small
 synthetic image helps reproduce file-specific problems.
 
 AstroFiles is licensed under [Apache 2.0](LICENSE). See [NOTICE](NOTICE) and
-[third-party notices](THIRD-PARTY-NOTICES.md) for XISFLib, SkyBrowser algorithm
-attribution, and the runtime dependencies included in release ZIPs.
+[third-party notices](THIRD-PARTY-NOTICES.md) for component attribution and the
+licenses of runtime dependencies included in release ZIPs.
