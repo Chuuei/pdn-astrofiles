@@ -14,16 +14,20 @@ public enum ImageStretch
 /// Full-resolution, straight-alpha RGBA display of scientific samples. Output RGB values
 /// are display encoded, not linear-light scRGB. The source samples remain unchanged.
 /// </summary>
-public sealed class ScientificImageDisplay
+public sealed partial class ScientificImageDisplay
 {
     private const double AutomaticBackground = 0.20;
     private readonly XisfImageData source;
     private readonly int colors;
+    private readonly bool hasAlpha;
     private readonly string rotation;
     private readonly bool flip;
     private readonly XisfDisplayFunction? function;
     private readonly double pedestal;
     private readonly Transform[] transforms;
+    private readonly BackgroundPlane[] planes;
+    private readonly double[] backgroundOffsets;
+    private readonly ImportCosmetics? cosmetics;
 
     public ScientificImageDisplay(XisfImageData source, string defaultName = "Image")
     {
@@ -40,8 +44,11 @@ public sealed class ScientificImageDisplay
             throw new NotSupportedException($"The {source.SampleFormat} sample format cannot be displayed.");
 
         this.source = source;
+        hasAlpha = source.ChannelCount > sourceColors;
         BayerPattern = BayerMetadata.Detect(source);
         colors = BayerPattern is null ? sourceColors : 3;
+        planes = new BackgroundPlane[colors];
+        backgroundOffsets = new double[colors];
         string orientation = source.Orientation ?? "0";
         if (orientation is not ("0" or "flip" or "0;flip" or "90" or "90;flip" or "-90" or "-90;flip" or "180" or "180;flip"))
             throw new NotSupportedException($"Unsupported XISF orientation: {orientation}.");
@@ -79,9 +86,18 @@ public sealed class ScientificImageDisplay
         else if (linear)
         {
             Stretch = ImageStretch.Automatic;
+            for (int c = 0; c < colors; c++) planes[c] = EstimateGradient(reader, c);
+            if (planes.Any(plane => plane.IsActive))
+            {
+                samples = Sample(reader);
+                medians = samples.Select(Median).ToArray();
+                median = medians.Average();
+            }
             pedestal = highPedestal ? Math.Max(0, median - AutomaticBackground) : 0;
+            if (colors == 3)
+                for (int c = 0; c < colors; c++) backgroundOffsets[c] = medians[c] - median;
             function = XisfDisplayFunctions.CreateAdaptive(
-                samples.Select(values => values.Select(value => value - pedestal).ToArray()).ToArray(),
+                samples.Select((values, c) => values.Select(value => value - pedestal - backgroundOffsets[c]).ToArray()).ToArray(),
                 targetBackground: AutomaticBackground, clipping: -2.8, linkChannels: true);
         }
 
@@ -91,6 +107,11 @@ public sealed class ScientificImageDisplay
             ? new Transform(0.5, 0, 1, 0, 1)
             : new Transform(function.Midtones[component], function.Shadows[component], function.Highlights[component],
                 function.LowRange[component], function.HighRange[component])).ToArray();
+
+        if (Stretch == ImageStretch.Automatic && Width >= 3 && Height >= 3)
+            cosmetics = new ImportCosmetics(Width, Height, colors, EstimateDisplayNoise(reader), CopyDisplayRow);
+        CosmeticsApplied = Stretch == ImageStretch.Automatic &&
+            (colors == 3 || planes.Any(plane => plane.IsActive) || cosmetics is not null);
     }
 
     public int Width { get; }
@@ -99,6 +120,7 @@ public sealed class ScientificImageDisplay
     public double HorizontalDpi { get; }
     public double VerticalDpi { get; }
     public ImageStretch Stretch { get; }
+    public bool CosmeticsApplied { get; }
     public string? BayerPattern { get; }
     // A mosaic's grayscale profile does not describe the newly reconstructed RGB data.
     public ReadOnlyMemory<byte> IccProfile => BayerPattern is null ? source.IccProfile ?? ReadOnlyMemory<byte>.Empty : ReadOnlyMemory<byte>.Empty;
@@ -110,6 +132,18 @@ public sealed class ScientificImageDisplay
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(y, Height);
         if (destination.Length < checked(Width * 4))
             throw new ArgumentException("The destination is too short for an RGBA row.", nameof(destination));
+        if (cosmetics is not null) cosmetics.CopyRow(y, destination);
+        else
+        {
+            CopyDisplayRow(y, destination);
+            for (int i = 0; i < Width * 4; i++)
+                if (!float.IsFinite(destination[i])) destination[i] = 0;
+        }
+    }
+
+    // Non-finite colors remain marked until neighborhood filtering has excluded them.
+    private void CopyDisplayRow(int y, Span<float> destination)
+    {
         var reader = new SampleReader(source, BayerPattern);
         int sourceWidth = source.Dimensions[0], sourceHeight = source.Dimensions[1];
         for (int x = 0; x < Width; x++)
@@ -127,10 +161,9 @@ public sealed class ScientificImageDisplay
             for (int c = 0; c < 3; c++)
             {
                 int channel = colors == 1 ? 0 : c;
-                double value = reader.Read(pixel, channel);
-                destination[target + c] = (float)Unit(function is null ? value : transforms[channel].Apply(value - pedestal));
+                destination[target + c] = (float)DisplayValue(reader, pixel, channel);
             }
-            destination[target + 3] = source.ChannelCount > colors ? (float)Unit(reader.Read(pixel, colors)) : 1;
+            destination[target + 3] = hasAlpha ? (float)Unit(reader.ReadAlpha(pixel)) : 1;
         }
     }
 
@@ -141,15 +174,42 @@ public sealed class ScientificImageDisplay
         var channels = Enumerable.Range(0, colors).Select(_ => new List<double>()).ToArray();
         for (int pixel = 0; pixel < count; pixel += step)
         {
-            if (source.ChannelCount > colors && Unit(reader.Read(pixel, colors)) <= 0)
+            if (hasAlpha && Unit(reader.ReadAlpha(pixel)) <= 0)
                 continue;
             for (int c = 0; c < colors; c++)
             {
                 double value = reader.Read(pixel, c);
-                if (double.IsFinite(value)) channels[c].Add(Math.Clamp(value, 0, 1));
+                if (double.IsFinite(value)) channels[c].Add(Math.Clamp(value, 0, 1) -
+                    planes[c].At(pixel % source.Dimensions[0], pixel / source.Dimensions[0], source.Dimensions[0], source.Dimensions[1]));
             }
         }
         return channels.Select(channel => channel.ToArray()).ToArray();
+    }
+
+    private double DisplayValue(SampleReader reader, int pixel, int channel)
+    {
+        double value = reader.Read(pixel, channel);
+        if (!double.IsFinite(value)) return double.NaN;
+        return Unit(function is null ? value : transforms[channel].Apply(value - pedestal - backgroundOffsets[channel] -
+            planes[channel].At(pixel % source.Dimensions[0], pixel / source.Dimensions[0], source.Dimensions[0], source.Dimensions[1])));
+    }
+
+    private double EstimateDisplayNoise(SampleReader reader)
+    {
+        int width = source.Dimensions[0], count = checked(width * source.Dimensions[1]);
+        int step = Math.Max(1, (int)Math.Ceiling(count / 65536d));
+        var differences = new List<double>();
+        for (int p = 0; p < count; p += step)
+        {
+            if (p % width == width - 1 || hasAlpha && (Unit(reader.ReadAlpha(p)) <= 0 || Unit(reader.ReadAlpha(p + 1)) <= 0)) continue;
+            double difference = 0;
+            for (int c = 0; c < colors; c++)
+                difference += (DisplayValue(reader, p + 1, c) - DisplayValue(reader, p, c)) *
+                    (colors == 1 ? 1 : c == 0 ? 0.2126 : c == 1 ? 0.7152 : 0.0722);
+            if (double.IsFinite(difference)) differences.Add(difference);
+        }
+        double center = Median(differences.ToArray());
+        return 1.4826 * Median(differences.Select(value => Math.Abs(value - center)).ToArray()) / Math.Sqrt(2);
     }
 
     private static double Median(double[] values)
@@ -250,6 +310,8 @@ public sealed class ScientificImageDisplay
                 : format == XisfSampleFormat.Float32 ? (float)floating : floating;
             return (average - lower) / range;
         }
+
+        public double ReadAlpha(int pixel) => (Value(pixel, channels - 1) - lower) / range;
 
         private ulong Bits(int pixel, int channel)
         {

@@ -92,7 +92,7 @@ public static class AstronomyImageWriter
         int Channels, byte[] Pixels, bool KeepAstrometry, string Orientation)
     {
         public string History => $"AstroFiles: edited display-referred Float32 samples; " +
-            $"import stretch={Origin.Stretch}; debayered={Origin.Debayered}; " +
+            $"import stretch={Origin.Stretch}; debayered={Origin.Debayered}; cosmetics={Origin.CosmeticsApplied}; " +
             (KeepAstrometry ? "geometry confirmed unchanged; astrometry retained." : "astrometry removed; geometry not confirmed or dimensions changed.");
     }
 

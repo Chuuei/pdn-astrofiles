@@ -11,9 +11,10 @@ components and their license texts in `AstroFiles/licenses/`:
 | ZstdSharp.Port 0.8.8 | MIT | https://github.com/oleg-st/ZstdSharp |
 | Original Zstandard codec | BSD 3-Clause | https://github.com/facebook/zstd |
 
-Stretch detection and Bayer reconstruction follow
+Stretch detection, Bayer reconstruction, background fitting, and cosmetic finishing parameters follow
 [SkyBrowser](https://github.com/Chuuei/SkyBrowser) algorithms (Apache 2.0),
-adapted for the Paint.NET image pipeline. Attribution is retained in `NOTICE`.
+adapted for the Paint.NET image pipeline with managed floating-point filters.
+Attribution is retained in `NOTICE`. No ImageMagick or Magick.NET binary is included.
 
 The exact XISFLib revision and Paint.NET reference download are pinned in
 `build/dependencies.json`. XISFLib supplies the upstream runtime license texts

@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Product>AstroFiles</Product>
     <Description>Astronomical image file types for Paint.NET.</Description>
     <PaintDotNetPath Condition="'$(PaintDotNetPath)' == '' and Exists('$(MSBuildThisFileDirectory)..\..\artifacts\paintdotnet\PaintDotNet.FileTypes.dll')">$(MSBuildThisFileDirectory)..\..\artifacts\paintdotnet</PaintDotNetPath>

@@ -4,10 +4,12 @@ https://github.com/Chuuei/pdn-astrofiles
 
 Licensed under the Apache License, Version 2.0.
 
-Display stretch detection and Bayer reconstruction follow algorithms from
+Display stretch detection, Bayer reconstruction, background fitting, and cosmetic
+finishing parameters follow algorithms from
 SkyBrowser, Copyright 2026 Chuuei and contributors, licensed under Apache 2.0.
 https://github.com/Chuuei/SkyBrowser
-AstroFiles adapts these algorithms for Paint.NET's floating-point image pipeline.
+AstroFiles adapts these algorithms with managed floating-point neighborhood filters
+and alpha-aware sampling for Paint.NET's full-resolution image pipeline.
 
 This product includes software developed for the XISFLib.Net project.
 Copyright 2026 Chuuei and contributors

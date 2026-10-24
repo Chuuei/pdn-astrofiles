@@ -62,8 +62,9 @@ public sealed class StretchTests
         for (int p = 0; p < pixels.Length / 4; p++)
         {
             Assert.Equal(p % 3 == 0 ? 0f : p % 3 == 1 ? 0.5f : 1f, pixels[p * 4 + 3]);
-            Assert.True(pixels[p * 4] < pixels[p * 4 + 1]);
-            Assert.True(pixels[p * 4 + 1] < pixels[p * 4 + 2]);
+            // Automatic finishing neutralizes the additive background color cast.
+            Assert.InRange(Math.Abs(pixels[p * 4] - pixels[p * 4 + 1]), 0, 0.00005);
+            Assert.InRange(Math.Abs(pixels[p * 4 + 1] - pixels[p * 4 + 2]), 0, 0.00005);
         }
         Assert.Equal(original, source.RawData.ToArray());
     }

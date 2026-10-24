@@ -9,6 +9,7 @@ public enum AstronomyFormat { Xisf, Fits }
 public sealed record ImageOrigin(string Id, int SourceIndex, int Width, int Height, string Orientation,
     bool Debayered, ImageStretch Stretch)
 {
+    public bool CosmeticsApplied { get; init; }
     public int DisplayWidth => Orientation.StartsWith("90", StringComparison.Ordinal) || Orientation.StartsWith("-90", StringComparison.Ordinal) ? Height : Width;
     public int DisplayHeight => Orientation.StartsWith("90", StringComparison.Ordinal) || Orientation.StartsWith("-90", StringComparison.Ordinal) ? Width : Height;
 }
@@ -49,7 +50,7 @@ public sealed record AstronomyMetadata(int Version, AstronomyFormat Format, byte
     {
         var origins = document.Images.Select((image, index) => new ImageOrigin(Guid.NewGuid().ToString("N"), index,
             image.Dimensions[0], image.Dimensions[1], image.Orientation ?? "0", displays[index].BayerPattern is not null,
-            displays[index].Stretch)).ToArray();
+            displays[index].Stretch) { CosmeticsApplied = displays[index].CosmeticsApplied }).ToArray();
         var template = document.EditXml(xml =>
         {
             XNamespace ns = xml.Root!.Name.Namespace;
@@ -80,7 +81,7 @@ public sealed record AstronomyMetadata(int Version, AstronomyFormat Format, byte
             if (hdu.Image is not { } image) continue;
             var display = displays[origins.Count];
             origins.Add(new(Guid.NewGuid().ToString("N"), index, image.Dimensions[0], image.Dimensions[1], "0",
-                display.BayerPattern is not null, display.Stretch));
+                display.BayerPattern is not null, display.Stretch) { CosmeticsApplied = display.CosmeticsApplied });
             hdu.ReplaceImage(FitsImage.FromPhysicalSamples(new byte[] { 0 }, [1, 1]));
         }
         using var stream = new MemoryStream();

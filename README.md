@@ -33,8 +33,8 @@ previous `AstroFiles` folder while Paint.NET is closed. Remove the folder to
 uninstall. The ZIP's `.sha256` asset can be checked with `Get-FileHash`.
 
 For FITS/XISF exports, review the **Image geometry unchanged** option described
-below. Import stretching and edits are baked into exported pixels; keep your
-original scientific files.
+below. Import stretching, cosmetic corrections, and edits are baked into exported
+pixels; keep your original scientific files.
 
 ## Automatic display
 
@@ -52,8 +52,20 @@ linear data when the dispersion is greater than 1e-10. A high additive pedestal
 is recentered before automatic stretching. Constant images retain their exposure.
 This is a heuristic; brightness statistics cannot establish linearity with certainty.
 
-The stretch affects color channels and leaves alpha unchanged. It performs no
-cosmetic processing. Source files and scientific sample buffers remain unchanged.
+Automatically stretched imports also receive cosmetic corrections:
+
+- Conservative reduction of broad sky gradients, using a clipped background
+  plane only when there is enough spatial support across the image.
+- Neutral background color balancing while retaining colored image detail.
+- Edge-preserving noise smoothing, gentle sharpening, and a small color boost.
+
+These corrections operate at full resolution in floating point. They affect
+color only and preserve alpha, image dimensions, orientation, and resolution.
+Developed images, constant frames, and images using a stored display function
+retain their existing appearance. Source files and scientific sample buffers
+remain unchanged. The corrections are aesthetic adjustments for editing;
+retain the original files for scientific measurements.
+
 FITS scaling (`BSCALE`, `BZERO`, `BLANK`) is applied by XISFLib before analysis.
 FITS third axes of length 3 or 4 are interpreted as RGB or RGBA.
 
@@ -122,14 +134,14 @@ conversion omissions are recorded in output `HISTORY`. FITS tables are converted
 where supported, with the library's documented table-storage limitations.
 
 Output uses normalized **Float32** samples, preserving color and alpha without
-an intermediate 8-bit conversion. Import stretching, debayering and subsequent
-Paint.NET edits are baked into the saved pixels. Old thumbnails, display
+an intermediate 8-bit conversion. Import stretching, cosmetic corrections,
+debayering and subsequent Paint.NET edits are baked into the saved pixels. Old thumbnails, display
 functions, pixel statistics, photometric units and pedestal are removed or
 updated; active Bayer metadata is removed after RGB reconstruction. Structural
 information is regenerated, and FITS checksums are recomputed. Processing history
 records these changes. The importer recognizes its saved display-referred pixels
-and does not automatically stretch them again. The original raw sample values
-and their precision cannot be recovered from the edited canvas.
+and does not automatically stretch or cosmetically process them again. The original
+raw sample values and their precision cannot be recovered from the edited canvas.
 
 For a single source image, saving exports the visible composite, including added
 editing layers. For multiple source images, each original layer is saved as its
@@ -216,8 +228,9 @@ checks without publishing. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workfl
 `PdnAstroFiles.Imaging` is the portable .NET 10 decoding/stretch/saving component.
 `PdnAstroFiles` adapts its rows to Paint.NET's document and bitmap interfaces.
 The test suite exercises decoding, stretch priority, dark/high-pedestal linear
-data, Bayer metadata and reconstruction, alpha, byte order, channel layout,
-orientation, stream ownership, metadata-preserving saves, cross-format conversion
+data, gradient reduction, noise and detail processing, Bayer metadata and
+reconstruction, alpha, byte order, channel layout, orientation, stream ownership,
+metadata-preserving saves, cross-format conversion
 and geometry changes.
 
 ```powershell
